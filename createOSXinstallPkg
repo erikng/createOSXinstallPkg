@@ -35,6 +35,7 @@ import shutil
 import subprocess
 import tempfile
 
+from distutils.version import LooseVersion
 from xml.dom import minidom
 from xml.parsers.expat import ExpatError
 
@@ -894,13 +895,19 @@ def main():
     system_version_plist = os.path.join(
         basesystemmountpoint,
         'System/Library/CoreServices/SystemVersion.plist')
-    brtool_path = os.path.join(basesystemmountpoint, 'usr/libexec/brtool')
-    copy_brtool(brtool_path, TMPDIR)
-    brtool_path = os.path.join(TMPDIR, 'brtool')
-    if not os.path.exists(brtool_path):
-        fail('Can\'t find brtool at %s' % basesystemmountpoint)
     try:
         version_info = plistlib.readPlist(system_version_plist)
+        os_version = version_info.get('ProductUserVisibleVersion')
+        if LooseVersion(os_version) >= LooseVersion('10.12.4'):
+            brtool_path = os.path.join(basesystemmountpoint, 'usr/libexec/brtool')
+            copy_brtool(brtool_path, TMPDIR)
+            brtool_path = os.path.join(TMPDIR, 'brtool')
+            if not os.path.exists(brtool_path):
+                fail('Can\'t find brtool at %s' % basesystemmountpoint)
+        else:
+            brtool_path = os.path.join(source, 'Contents/Resources/brtool')
+            if not os.path.exists(brtool_path):
+                fail('Can\'t find brtool at %s' % installesd_dmg)
     except (ExpatError, IOError), err:
         unmountdmg(basesystemmountpoint)
         unmountdmg(mountpoint)
@@ -918,7 +925,6 @@ def main():
     distfile = os.path.join(expanded_osinstall_mpkg, 'Distribution')
 
     unmountdmg(mountpoint)
-    os_version = version_info.get('ProductUserVisibleVersion')
     build_number = version_info.get('ProductBuildVersion')
     if os_version is None or build_number is None:
         fail('Missing OS version or build info in %s' % system_version_plist)
