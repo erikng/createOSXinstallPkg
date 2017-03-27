@@ -413,8 +413,9 @@ def copy_postflight_script(output_pkg_path):
 
 
 def copy_brtool(brtool_path, output_pkg_path):
-    '''Copies brtool from the Install OS X.app into the package resources'''
-    destination = os.path.join(output_pkg_path, 'Contents/Resources/brtool')
+    '''Copies brtool from the Install OS X.app into the package resources or
+    Copies from InstallESD.dmg (10.12.4 and possibly higher.)'''
+    destination = os.path.join(output_pkg_path, 'brtool')
     try:
         shutil.copy(brtool_path, destination)
         # make sure it's executable
@@ -862,9 +863,6 @@ def main():
             source, 'Contents/SharedSupport/InstallESD.dmg')
         if not os.path.exists(installesd_dmg):
             fail('Can\'t find InstallESD.dmg at %s' % installesd_dmg)
-        brtool_path = os.path.join(source, 'Contents/Resources/brtool')
-        if not os.path.exists(brtool_path):
-            fail('Can\'t find brtool at %s' % installesd_dmg)
 
     elif source.endswith('.dmg'):
         fail('This tool no longer supports using an InstallESD.dmg as a source.'
@@ -896,6 +894,11 @@ def main():
     system_version_plist = os.path.join(
         basesystemmountpoint,
         'System/Library/CoreServices/SystemVersion.plist')
+    brtool_path = os.path.join(basesystemmountpoint, 'usr/libexec/brtool')
+    copy_brtool(brtool_path, TMPDIR)
+    brtool_path = os.path.join(TMPDIR, 'brtool')
+    if not os.path.exists(brtool_path):
+        fail('Can\'t find brtool at %s' % basesystemmountpoint)
     try:
         version_info = plistlib.readPlist(system_version_plist)
     except (ExpatError, IOError), err:
