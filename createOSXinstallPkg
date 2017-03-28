@@ -873,6 +873,14 @@ def main():
         fail('Unknown/unsupported source: %s' % source)
 
     additional_packages = options.packages or plist_options.get('Packages', [])
+    if additional_packages:
+        app_version_plist = os.path.join(
+            source,
+            'Contents/Info.plist')
+        app_info = plistlib.readPlist(app_version_plist)
+        app_version = app_info.get('CFBundleShortVersionString')
+        if LooseVersion(app_version) >= LooseVersion('12.4.06'):
+            fail('As of 10.12.4, COSXIP cannot add custom packages.')
     if options.make_fake_app and not additional_packages:
         fail('No additional packages specified -- nothing to add to the fake '
              'install app!')
