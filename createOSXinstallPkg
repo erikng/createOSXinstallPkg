@@ -413,10 +413,14 @@ def copy_postflight_script(output_pkg_path):
     fail('Could not find postflight script.')
 
 
-def copy_brtool(brtool_path, output_pkg_path):
+def copy_brtool(brtool_path, output_pkg_path, fromtemp):
     '''Copies brtool from the Install OS X.app into the package resources or
     Copies from InstallESD.dmg (10.12.4 and possibly higher.)'''
-    destination = os.path.join(output_pkg_path, 'brtool')
+    if fromtemp:
+        destination = os.path.join(output_pkg_path, 'brtool')
+    else:
+        destination = os.path.join(output_pkg_path,
+                                   'Contents/Resources/brtool')
     try:
         shutil.copy(brtool_path, destination)
         # make sure it's executable
@@ -908,7 +912,7 @@ def main():
         os_version = version_info.get('ProductUserVisibleVersion')
         if LooseVersion(os_version) >= LooseVersion('10.12.4'):
             brtool_path = os.path.join(basesystemmountpoint, 'usr/libexec/brtool')
-            copy_brtool(brtool_path, TMPDIR)
+            copy_brtool(brtool_path, TMPDIR, True)
             brtool_path = os.path.join(TMPDIR, 'brtool')
             if not os.path.exists(brtool_path):
                 fail('Can\'t find brtool at %s' % basesystemmountpoint)
@@ -1033,7 +1037,7 @@ def main():
         # clean up the broken package as well as our TMPDIR
 
         print 'Copying brtool into package resources...'
-        copy_brtool(brtool_path, output_pkg_path)
+        copy_brtool(brtool_path, output_pkg_path, False)
 
         print 'Creating MacOSXInstaller.choiceChanges...'
         makeEmptyInstallerChoiceChanges(output_pkg_path)
